@@ -8,7 +8,7 @@ from google.oauth2.service_account import Credentials
 st.set_page_config(page_title="Sinefil Tayfa", layout="wide")
 st.title("Güvenlik Film İzliyor")
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=120)
 def load_data():
     scopes = [
         "https://www.googleapis.com/auth/spreadsheets",
