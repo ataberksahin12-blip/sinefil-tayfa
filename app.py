@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import requests
 
 st.set_page_config(page_title="Sinefil Tayfa", layout="wide")
 st.title("Güvenlik Film İzliyor")
@@ -20,6 +21,30 @@ def load_data():
 df = load_data()
 
 izlenen_filmler = df.dropna(subset=['Grup Ortalaması'])
+
+TMDB_API_KEY = st.secrets["TMDB_API_KEY"]
+
+def get_tmdb_data(film_adi):
+    url = f"https://api.themoviedb.org/3/search/movie"
+    params = {
+        "api_key": TMDB_API_KEY,
+        "query": film_adi,
+        "language": "tr-TR"
+    }
+    response = requests.get(url, params=params)
+    data = response.json()
+    
+    if data["results"]:
+        film = data["results"][0]
+        poster_path = film.get("poster_path")
+        poster_url = f"https://image.tmdb.org/t/p/w300{poster_path}" if poster_path else None
+        genres = film.get("genre_ids", [])
+        return {
+            "poster_url": poster_url,
+            "tmdb_rating": round(film.get("vote_average", 0) / 2, 2),  # 10'dan 5'e çevir
+            "overview": film.get("overview", ""),
+        }
+    return None
 
 
 st.subheader("🏆 Genel Durum")
@@ -47,7 +72,31 @@ st.subheader("🍿 Film Listesi ve Puanlar")
 st.dataframe(df.style.highlight_max(axis=0, subset=["Grup Ortalaması"], color="#2E7D32"))
 
 st.markdown("---")
+st.subheader("🎬 Film Kartları")
 
+@st.cache_data
+def get_poster(film_adi):
+    tmdb = get_tmdb_data(film_adi)
+    return tmdb
+
+cols_per_row = 4
+filmler = izlenen_filmler.reset_index(drop=True)
+
+for i in range(0, len(filmler), cols_per_row):
+    cols = st.columns(cols_per_row)
+    for j, col in enumerate(cols):
+        if i + j < len(filmler):
+            film = filmler.iloc[i + j]
+            tmdb = get_poster(film["film_adi"])
+            with col:
+                if tmdb and tmdb["poster_url"]:
+                    st.image(poster_url, width=180)
+                else:
+                    st.markdown("🎞️ Poster yok")
+                st.markdown(f"**{film['film_adi']}**")
+                st.markdown(f"_{film['yonetmen']}_")
+                st.markdown(f"⭐ Grup: `{film['Grup Ortalaması']}`")
+                st.markdown(f"📽️ Öneren: `{film['oneren']}`")
 st.subheader("📊 Güvenlik vs. Dünya")
 if not izlenen_filmler.empty:
     grafik_verisi = izlenen_filmler.rename(columns={"film_adi": "Film Adı"})
