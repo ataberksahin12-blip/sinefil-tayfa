@@ -90,7 +90,7 @@ if sayfa == "🏠 Genel":
 
     st.markdown("---")
     st.subheader("🍿 Film Listesi ve Puanlar")
-    st.dataframe(df.style.highlight_max(axis=0, subset=["Grup Ortalaması"], color="#2E7D32"))
+    st.dataframe(df, hide_index=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SAYFA: FİLM KARTLARI
@@ -134,9 +134,15 @@ elif sayfa == "🎯 Sıralama":
     if kisi_stats:
         kisi_df_gosterim = pd.DataFrame(kisi_stats).sort_values("Grup'tan Sapma")
         st.dataframe(kisi_df_gosterim, hide_index=True)
+
+        min_sapma = kisi_df_gosterim["Grup'tan Sapma"].min()
+        max_sapma = kisi_df_gosterim["Grup'tan Sapma"].max()
+        en_tutarlilar = kisi_df_gosterim[kisi_df_gosterim["Grup'tan Sapma"] == min_sapma]["İsim"].tolist()
+        en_aykinlar   = kisi_df_gosterim[kisi_df_gosterim["Grup'tan Sapma"] == max_sapma]["İsim"].tolist()
+
         col1, col2 = st.columns(2)
-        col1.metric("🎖️ En Tutarlı İzleyici", kisi_df_gosterim.iloc[0]["İsim"])
-        col2.metric("🌪️ En Aykırı İzleyici",  kisi_df_gosterim.iloc[-1]["İsim"])
+        col1.metric("🎖️ En Tutarlı İzleyici", ", ".join(en_tutarlilar), f"Sapma: {min_sapma}")
+        col2.metric("🌪️ En Aykırı İzleyici",  ", ".join(en_aykinlar),   f"Sapma: {max_sapma}")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SAYFA: EN ZEVK SAHİBİ
@@ -151,7 +157,9 @@ elif sayfa == "😎 En Zevk Sahibi":
         oneren_stats.columns = ["Öneren", "Önerdiği Film Sayısı", "Ortalama Grup Puanı"]
         oneren_stats = oneren_stats.sort_values("Ortalama Grup Puanı", ascending=False)
         st.dataframe(oneren_stats, hide_index=True)
-        st.metric("🏅 En Zevk Sahibi", oneren_stats.iloc[0]["Öneren"])
+        max_puan = oneren_stats["Ortalama Grup Puanı"].max()
+        en_zevkliler = oneren_stats[oneren_stats["Ortalama Grup Puanı"] == max_puan]["Öneren"].tolist()
+        st.metric("🏅 En Zevk Sahibi", ", ".join(en_zevkliler), f"Ort: {max_puan}")
     else:
         st.info("Yeterli veri yok.")
 
@@ -161,11 +169,11 @@ elif sayfa == "😎 En Zevk Sahibi":
 elif sayfa == "📊 Güvenlik vs Dünya":
     st.title("📊 Güvenlik vs. Dünya")
     if not izlenen_filmler.empty:
-        grafik_verisi = izlenen_filmler.rename(columns={"film_adi": "Film Adı"})
+        grafik_verisi = izlenen_filmler.rename(columns={"film_adi": "Film Adı", "letterboxd_avr": "Letterboxd Ortalaması"})
         fig = px.bar(
             grafik_verisi,
             y="Film Adı",
-            x=["Grup Ortalaması", "letterboxd_avr", "IMDb (5 Üzerinden)"],
+            x=["Grup Ortalaması", "Letterboxd Ortalaması", "IMDb (5 Üzerinden)"],
             barmode="group",
             orientation="h"
         )
@@ -349,7 +357,6 @@ elif sayfa == "👤 Profil":
         tablo.columns = ["Film", "Puan", "Grup Ort.", "Sapma"]
         st.dataframe(
             tablo.style
-                 .format({"Puan": "{:.1f}", "Grup Ort.": "{:.1f}", "Sapma": "{:+.1f}"})
-                 .background_gradient(subset=["Puan"], cmap="RdYlGn"),
+                 .format({"Puan": "{:.1f}", "Grup Ort.": "{:.1f}", "Sapma": "{:+.1f}"}),
             hide_index=True, use_container_width=True
         )
