@@ -101,6 +101,27 @@ sayfa = st.sidebar.radio(
     label_visibility="collapsed"
 )
 
+def get_tag_data(df_input, rating_col, tag_col):
+    # İlgili sütun yoksa boş dön
+    if tag_col not in df_input.columns:
+        return pd.DataFrame()
+        
+    df_g = df_input.dropna(subset=[tag_col, rating_col]).copy()
+    if df_g.empty:
+        return pd.DataFrame()
+
+    # Virgülle ayrılmış etiketleri listeye çevir ve satırlara böl
+    df_g[tag_col] = df_g[tag_col].astype(str).str.split(',')
+    df_g = df_g.explode(tag_col)
+    df_g[tag_col] = df_g[tag_col].str.strip() # Boşlukları temizle
+    
+    # Etikete göre grupla ve ortalama puanı al
+    stats = df_g.groupby(tag_col).agg(
+        Ortalama_Puan=(rating_col, 'mean'),
+        Film_Sayisi=('film_adi', 'count')
+    ).reset_index()
+    
+    return stats.sort_values('Ortalama_Puan', ascending=False)
 # ══════════════════════════════════════════════════════════════════════════════
 # SAYFA: GENEL DURUM
 # ══════════════════════════════════════════════════════════════════════════════
@@ -126,7 +147,53 @@ if sayfa == "🏠 Genel":
     st.markdown("---")
     st.subheader("🍿 Film Listesi ve Puanlar")
     st.dataframe(df, hide_index=True)
+    
+    st.markdown("---")
+    st.subheader("🕸️ Tayfanın Ortak Zevk Radarı")
+    
+    # Ekranı ikiye bölüyoruz: Sol taraf Türler, Sağ taraf Biçim/Tema
+    g_col1, g_col2 = st.columns(2)
+    
+    # 1. GRUP TÜRLER RADARI
+    with g_col1:
+        st.markdown("**🎬 Favori Türler**")
+        # 'Grup Ortalaması' sütununu baz alıyoruz
+        g_genre_stats = get_tag_data(izlenen_filmler, 'Grup Ortalaması', 'turler')
+        
+        if not g_genre_stats.empty and len(g_genre_stats) >= 3:
+            fig_g_genre = px.line_polar(
+                g_genre_stats, r='Ortalama_Puan', theta='turler', 
+                line_close=True, markers=True, hover_name='turler', hover_data={'Film_Sayisi': True}
+            )
+            # Grup için farklı bir renk (Mor)
+            fig_g_genre.update_traces(fill='toself', line_color='#9b59b6') 
+            fig_g_genre.update_layout(
+                polar=dict(radialaxis=dict(visible=True, range=[0, 5])), 
+                showlegend=False, height=350, margin=dict(t=20, b=20, l=40, r=40)
+            )
+            st.plotly_chart(fig_g_genre, use_container_width=True)
+        else:
+            st.info("Grup tür analizi için yeterli veri yok (En az 3 farklı tür gerekli).")
 
+    # 2. GRUP BİÇİM / TEMA RADARI
+    with g_col2:
+        st.markdown("**🧠 Favori Biçim/Tema**")
+        g_bicim_stats = get_tag_data(izlenen_filmler, 'Grup Ortalaması', 'bicim')
+        
+        if not g_bicim_stats.empty and len(g_bicim_stats) >= 3:
+            fig_g_bicim = px.line_polar(
+                g_bicim_stats, r='Ortalama_Puan', theta='bicim', 
+                line_close=True, markers=True, hover_name='bicim', hover_data={'Film_Sayisi': True}
+            )
+            # Grup için farklı bir renk (Sarı/Turuncu)
+            fig_g_bicim.update_traces(fill='toself', line_color='#f39c12') 
+            fig_g_bicim.update_layout(
+                polar=dict(radialaxis=dict(visible=True, range=[0, 5])), 
+                showlegend=False, height=350, margin=dict(t=20, b=20, l=40, r=40)
+            )
+            st.plotly_chart(fig_g_bicim, use_container_width=True)
+        else:
+            st.info("Grup biçim analizi için yeterli veri yok (En az 3 farklı biçim gerekli).")
 # ══════════════════════════════════════════════════════════════════════════════
 # SAYFA: FİLM KARTLARI
 # ══════════════════════════════════════════════════════════════════════════════
