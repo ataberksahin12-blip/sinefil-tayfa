@@ -28,6 +28,7 @@ def load_data():
     
     for col in rating_cols:
         df[col] = pd.to_numeric(df[col], errors='coerce')
+    df['letterboxd_avr'] = pd.to_numeric(df['letterboxd_avr'], errors='coerce')    
     
     df['Grup Ortalaması'] = df[rating_cols].mean(axis=1).round(2)
     df['Zevk Farkı (Std)'] = df[rating_cols].std(axis=1).round(2)
