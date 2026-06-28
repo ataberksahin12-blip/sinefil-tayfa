@@ -418,3 +418,49 @@ elif sayfa == "👤 Profil":
                  .format({"Puan": "{:.1f}", "Grup Ort.": "{:.1f}", "Sapma": "{:+.1f}"}),
             hide_index=True, use_container_width=True
         )
+elif sayfa == "⚙️ Admin Otomasyon":
+    st.title("⚙️ TMDB'den Veri Çek ve Tabloyu Güncelle")
+    st.info("Bu işlem, Google Sheets'teki 'turler' sütunu boş olan filmler için TMDB'den otomatik veri çeker ve tabloya yazar.")
+    
+    if st.button("🚀 Türleri Otomatik Doldur"):
+        with st.spinner("TMDB ile konuşuluyor ve tablo güncelleniyor..."):
+            # Google Sheets bağlantısını tekrar alalım (güncelleme yetkisiyle)
+            scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
+            client = gspread.authorize(creds)
+            sheet = client.open("Guvenlik").sheet1
+            
+            # Tablodaki tüm veriyi çek
+            kayitlar = sheet.get_all_records()
+            guncellendi = 0
+            
+            for i, row in enumerate(kayitlar):
+                # Satır indeksini bul (Google Sheets 1'den başlar, ilk satır başlıktır -> i + 2)
+                row_idx = i + 2 
+                
+                # Sadece TMDB ID'si olan ve Türler sütunu boş olanlara işlem yap
+                if pd.notna(row.get('tmdb_id')) and str(row.get('tmdb_id')).strip():
+                    if 'turler' not in row or not str(row.get('turler')).strip():
+                        
+                        tmdb_id = int(float(row['tmdb_id']))
+                        # TMDB'den film detaylarını çek (Türkçe)
+                        url = f"https://api.themoviedb.org/3/movie/{tmdb_id}?api_key={st.secrets['TMDB_API_KEY']}&language=tr-TR"
+                        r = requests.get(url)
+                        
+                        if r.ok:
+                            data = r.json()
+                            # TMDB'den gelen türleri alıp virgülle birleştir
+                            tur_isimleri = [genre['name'] for genre in data.get('genres', [])]
+                            tur_metni = ", ".join(tur_isimleri)
+                            
+                            # Google Sheets'teki ilgili hücreyi güncelle (örneğin 'turler' J sütunuysa)
+                            # NOT: Tablondaki 'turler' sütununun harfini buraya yazmalısın (örn: 'J', 'K')
+                            # Başlıkları çekerek 'turler' sütununun indeksini bulalım:
+                            headers = sheet.row_values(1)
+                            if 'turler' in headers:
+                                col_idx = headers.index('turler') + 1
+                                sheet.update_cell(row_idx, col_idx, tur_metni)
+                                guncellendi += 1
+            
+            st.success(f"İşlem tamam! {guncellendi} filmin türü otomatik olarak güncellendi. Lütfen sayfayı yenileyin.")
+            st.cache_data.clear() # Cache'i temizle ki yeni veriler anında yansısın
