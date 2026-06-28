@@ -2,17 +2,37 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import requests
+import gspread
+from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Sinefil Tayfa", layout="wide")
 st.title("Güvenlik Film İzliyor")
 
-@st.cache_data
+@st.cache_data(ttl=300)
 def load_data():
-    df = pd.read_csv("Guvenlik - Sayfa1.csv")
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    creds = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=scopes
+    )
+    client = gspread.authorize(creds)
+    
+    sheet = client.open("Guvenlik").sheet1
+    data = sheet.get_all_records()
+    df = pd.DataFrame(data)
+    
     rating_cols = ['ataberk_rtg', 'batu_rtg', 'ceylin_rtg', 'gokalp_rtg', 'kutay_rtg', 'onur_rtg']
+    
+    for col in rating_cols:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+    
     df['Grup Ortalaması'] = df[rating_cols].mean(axis=1).round(2)
     df['Zevk Farkı (Std)'] = df[rating_cols].std(axis=1).round(2)
-    df['IMDb (5 Üzerinden)'] = (df['imdb'] / 2).round(2)
+    df['IMDb (5 Üzerinden)'] = pd.to_numeric(df['imdb'], errors='coerce').div(2).round(2)
+    
     return df
 
 df = load_data()
