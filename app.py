@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 
 st.set_page_config(page_title="Sinefil Tayfa", layout="wide")
 st.title("Güvenlik Film İzliyor")
@@ -51,12 +52,21 @@ st.subheader("📊 Güvenlik vs. Dünya")
 if not izlenen_filmler.empty:
     grafik_verisi = izlenen_filmler.rename(columns={"film_adi": "Film Adı"})
     
-    st.bar_chart(
+    fig = px.bar(
         grafik_verisi,
-        x="Film Adı", 
-        y=["Grup Ortalaması", "letterboxd_avr", "IMDb (5 Üzerinden)"],
-        stack=False,      
-        horizontal=True   
+        y="Film Adı", 
+        x=["Grup Ortalaması", "letterboxd_avr", "IMDb (5 Üzerinden)"],
+        barmode="group", 
+        orientation="h"  
     )
+    
+    fig.update_layout(
+        yaxis_title=None, 
+        xaxis_title="Puan",
+        legend_title="Puan Türü",
+        hovermode="y unified" 
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
 else:
     st.info("Grafik oluşturmak için henüz film oylanmamış.")
