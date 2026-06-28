@@ -165,7 +165,7 @@ if not izlenen_filmler.empty:
     fig = px.bar(
         grafik_verisi,
         y="Film Adı",
-        x=["Grup Ortalaması", "letterboxd_avr", "IMDb (5 Üzerinden)"],
+        x=["Grup Ortalaması", "Letterboxd Ortalaması", "IMDb (5 Üzerinden)"],
         barmode="group",
         orientation="h"
     )
