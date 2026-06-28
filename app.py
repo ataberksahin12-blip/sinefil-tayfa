@@ -428,7 +428,7 @@ elif sayfa == "👤 Profil":
         )
 elif sayfa == "⚙️ Admin Otomasyon":
     st.title("⚙️ Tabloyu Otomatik Doldur")
-    st.info("Sadece TMDB ID'sini girdiğiniz filmlerin eksik olan bilgilerini (İngilizce Film Adı, Yönetmen, Türkçe Türler) otomatik çeker ve tabloya yazar. (Not: TMDB, IMDb puanı vermediği için puanlar manuel girilmelidir).")
+    st.info("Sadece TMDB ID'sini girdiğiniz filmlerin eksik olan bilgilerini (İngilizce Film Adı, Latin Alfabeli Yönetmen, Türkçe Türler) otomatik çeker ve tabloya yazar. (Not: TMDB, IMDb puanı vermediği için puanlar manuel girilmelidir).")
     
     if st.button("🚀 Film Bilgilerini Doldur"):
         with st.spinner("TMDB ile konuşuluyor ve tablo güncelleniyor..."):
@@ -451,9 +451,9 @@ elif sayfa == "⚙️ Admin Otomasyon":
                     if not row.get('film_adi') or not row.get('yonetmen') or not row.get('turler'):
                         st.write(f"🔍 ID: {tmdb_id} taranıyor...")
                         
-                        # İngilizce İsim için en-US, Türkçe Türler ve Yönetmen için tr-TR isteği
-                        url_en = f"https://api.themoviedb.org/3/movie/{tmdb_id}?api_key={st.secrets['TMDB_API_KEY']}&language=en-US"
-                        url_tr = f"https://api.themoviedb.org/3/movie/{tmdb_id}?api_key={st.secrets['TMDB_API_KEY']}&language=tr-TR&append_to_response=credits"
+                        # Yönetmen bilgisini (credits) artık İngilizce istekten çekiyoruz
+                        url_en = f"https://api.themoviedb.org/3/movie/{tmdb_id}?api_key={st.secrets['TMDB_API_KEY']}&language=en-US&append_to_response=credits"
+                        url_tr = f"https://api.themoviedb.org/3/movie/{tmdb_id}?api_key={st.secrets['TMDB_API_KEY']}&language=tr-TR"
                         
                         r_en = requests.get(url_en)
                         r_tr = requests.get(url_tr)
@@ -462,22 +462,22 @@ elif sayfa == "⚙️ Admin Otomasyon":
                             data_en = r_en.json()
                             data_tr = r_tr.json()
                             
-                            # 1. FİLM ADI: İngilizce veriden (data_en) çekiyoruz
+                            # 1. FİLM ADI: İngilizce veriden (data_en)
                             if not row.get('film_adi') and 'film_adi' in headers:
                                 sheet.update_cell(row_idx, headers.index('film_adi') + 1, data_en.get('title', ''))
                                 
-                            # 2. YÖNETMEN: Türkçe/Evrensel veriden çekiyoruz
+                            # 2. YÖNETMEN: İngilizce/Uluslararası veriden (data_en) çekiyoruz
                             if not row.get('yonetmen') and 'yonetmen' in headers:
-                                crew = data_tr.get('credits', {}).get('crew', [])
+                                crew = data_en.get('credits', {}).get('crew', [])
                                 yonetmen = next((c['name'] for c in crew if c['job'] == 'Director'), '')
                                 sheet.update_cell(row_idx, headers.index('yonetmen') + 1, yonetmen)
                                 
-                            # 3. TÜRLER: Türkçe veriden (data_tr) çekiyoruz ki Dram, Gerilim vs. Türkçe kalsın
+                            # 3. TÜRLER: Türkçe veriden (data_tr) çekiyoruz (Aksiyon, Suç, Dram vs. için)
                             if not row.get('turler') and 'turler' in headers:
                                 tur_metni = ", ".join([g['name'] for g in data_tr.get('genres', [])])
                                 sheet.update_cell(row_idx, headers.index('turler') + 1, tur_metni)
                                 
                             guncellendi += 1
                             
-            st.success(f"İşlem tamam! {guncellendi} filmin eksik verileri İngilizce isimleriyle tamamlandı.")
+            st.success(f"İşlem tamam! {guncellendi} filmin eksik verileri İngilizce isimler ve Latin alfabesiyle tamamlandı.")
             st.cache_data.clear()
