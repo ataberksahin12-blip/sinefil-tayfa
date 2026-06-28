@@ -89,7 +89,15 @@ def get_poster(film_adi, yonetmen=None, tmdb_id=None):
 st.sidebar.title("🎬 Güvenlik Film")
 sayfa = st.sidebar.radio(
     "Sayfa",
-    ["🏠 Genel", "🎬 Film Kartları", "🎯 Sıralama", "😎 En Zevk Sahibi", "📊 Güvenlik vs Dünya", "👤 Profil"],
+    [
+        "🏠 Genel", 
+        "🎬 Film Kartları", 
+        "🎯 Sıralama", 
+        "😎 En Zevk Sahibi", 
+        "📊 Güvenlik vs Dünya", 
+        "👤 Profil", 
+        "⚙️ Admin Otomasyon"  # <-- BURAYI EKLEDİK
+    ],
     label_visibility="collapsed"
 )
 
