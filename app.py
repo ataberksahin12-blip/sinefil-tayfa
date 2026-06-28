@@ -198,17 +198,28 @@ elif sayfa == "📊 Güvenlik vs Dünya":
     if not izlenen_filmler.empty:
         grafik_verisi = izlenen_filmler.rename(columns={
             "film_adi": "Film Adı", 
-            "letterboxd_avr": "Letterboxd Ortalaması"
+            "letterboxd_avr": "Letterboxd Ortalaması",
+            "IMDb (5 Üzerinden)": "IMDb Ortalaması"
         })
         
-        # Dağılım Grafiği (Scatter Plot) oluşturuyoruz
+        # Kullanıcıya kıyaslama ölçütünü seçtiriyoruz
+        st.markdown("**Kiminle kıyaslamak istersin?**")
+        kiyas_tercihi = st.radio(
+            "Ölçüt:", 
+            ["Letterboxd Ortalaması", "IMDb Ortalaması"], 
+            horizontal=True, 
+            label_visibility="collapsed"
+        )
+        
+        # Dağılım Grafiği (Scatter Plot)
         fig = px.scatter(
             grafik_verisi,
-            x="Letterboxd Ortalaması",
+            x=kiyas_tercihi,
             y="Grup Ortalaması",
             hover_name="Film Adı",
+            hover_data={"Grup Ortalaması": True, "Letterboxd Ortalaması": True, "IMDb Ortalaması": True, kiyas_tercihi: False},
             color="Grup Ortalaması",
-            color_continuous_scale="RdYlGn", # Kırmızıdan yeşile renk skalası
+            color_continuous_scale="RdYlGn",
             size_max=15
         )
         
@@ -219,13 +230,16 @@ elif sayfa == "📊 Güvenlik vs Dünya":
         )
         
         fig.update_layout(
-            xaxis_title="Dünya (Letterboxd) Puanı",
+            xaxis_title=f"Dünya ({kiyas_tercihi.split()[0]}) Puanı",
             yaxis_title="Vaziyet (Grup Ortalaması)",
             height=600,
             hovermode="closest",
             xaxis=dict(range=[0.5, 5.2]),
             yaxis=dict(range=[0.5, 5.2])
         )
+        # Nokta boyutunu biraz daha okunabilir yapalım
+        fig.update_traces(marker=dict(size=12, line=dict(width=1, color='DarkSlateGrey')))
+        
         st.plotly_chart(fig, use_container_width=True)
         
         st.info("💡 **Grafik Nasıl Okunur?** Kesik çizginin **üstünde** kalan filmleri dünya ortalamasından daha çok sevmişsiniz. **Altında** kalanlarda ise dünya sizden daha iyimser.")
