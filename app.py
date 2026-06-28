@@ -134,6 +134,27 @@ if kisi_stats:
     col1, col2 = st.columns(2)
     col1.metric("🎖️ En Tutarlı İzleyici", en_tutarli)
     col2.metric("🌪️ En Aykırı İzleyici", en_aykin)
+    
+st.markdown("---")
+
+# --- ÖNEREN SKOR TABLOSU ---
+st.subheader("🎬 En Zevk Sahibi")
+
+if not izlenen_filmler.empty:
+    oneren_stats = izlenen_filmler.groupby("oneren").agg(
+        Film_Sayisi=("film_adi", "count"),
+        Ortalama_Grup_Puani=("Grup Ortalaması", "mean")
+    ).round(2).reset_index()
+    
+    oneren_stats.columns = ["Öneren", "Önerdiği Film Sayısı", "Ortalama Grup Puanı"]
+    oneren_stats = oneren_stats.sort_values("Ortalama Grup Puanı", ascending=False)
+    
+    st.dataframe(oneren_stats, hide_index=True)
+    
+    en_iyi_kurator = oneren_stats.iloc[0]["Öneren"]
+    st.metric("🏅 En Zevk Sahibi", en_iyi_kurator)
+else:
+    st.info("Yeterli veri yok.")
 
 st.markdown("---")
 
