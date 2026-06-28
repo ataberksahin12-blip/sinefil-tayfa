@@ -50,6 +50,10 @@ st.markdown("---")
 st.subheader("📊 Güvenlik vs. Dünya")
 if not izlenen_filmler.empty:
     grafik_verisi = izlenen_filmler[['film_adi', 'Grup Ortalaması', 'letterboxd_avr', 'IMDb (5 Üzerinden)']].set_index('film_adi')
-    st.bar_chart(grafik_verisi)
+    st.bar_chart(
+    df,
+    x="Filmin Adının Yazdığı Sütun",  # Yatay eksende filmlerin adları olsun
+    y=["Güvenlik Puanı Sütunu", "Dünya Puanı Sütunu"] # Dikey eksende bu iki puan kıyaslansın
+)
 else:
     st.info("Grafik oluşturmak için henüz film oylanmamış.")
