@@ -55,11 +55,15 @@ def get_poster(film_adi, yonetmen=None, tmdb_id=None):
 
     try:
         # 1) tmdb_id varsa direkt çek — en güvenilir yol
-        if tmdb_id and str(tmdb_id).strip():
-            r = requests.get(f"{base}/movie/{tmdb_id}",
-                             params={"api_key": TMDB_API_KEY}, timeout=5)
-            if r.ok:
-                return parse(r.json())
+        if pd.notna(tmdb_id) and str(tmdb_id).strip() and str(tmdb_id).lower() != 'none':
+            try:
+                temiz_id = int(float(tmdb_id))
+                r = requests.get(f"{base}/movie/{temiz_id}",
+                                 params={"api_key": TMDB_API_KEY, "language": "tr-TR"}, timeout=5)
+                if r.ok:
+                    return parse(r.json())
+            except ValueError:
+                pass # ID sayıya çevrilemezse arama adımlarına geçsin
 
         # 2) Film adı + yönetmen ile ara
         query = f"{film_adi} {yonetmen}".strip() if yonetmen else film_adi
