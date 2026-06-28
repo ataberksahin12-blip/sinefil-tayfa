@@ -35,7 +35,7 @@ def load_data():
     return df
 
 df = load_data()
-izlenen_filmler = df.dropna(subset=['Grup Ortalaması'])
+izlenen_filmler = df.dropna(subset=RATING_COLS).copy()
 
 # ── TMDB ──────────────────────────────────────────────────────────────────────
 TMDB_API_KEY = st.secrets["TMDB_API_KEY"]
@@ -98,7 +98,7 @@ sayfa = st.sidebar.radio(
 # ══════════════════════════════════════════════════════════════════════════════
 if sayfa == "🏠 Genel":
     st.title("Güvenlik Film İzliyor")
-    st.subheader("🏆 Genel Durum")
+    st.subheader("🏆 Vaziyet")
     col1, col2, col3 = st.columns(3)
     col1.metric("Toplam İzlenen Film", len(izlenen_filmler))
 
@@ -168,8 +168,8 @@ elif sayfa == "🎯 Sıralama":
         en_aykinlar   = kisi_df_gosterim[kisi_df_gosterim["Grup'tan Sapma"] == max_sapma]["İsim"].tolist()
 
         col1, col2 = st.columns(2)
-        col1.metric("🎖️ En Tutarlı İzleyici", ", ".join(en_tutarlilar), f"Sapma: {min_sapma}")
-        col2.metric("🌪️ En Aykırı İzleyici",  ", ".join(en_aykinlar),   f"Sapma: {max_sapma}")
+        col1.metric("🎖️ Düz İnsan", ", ".join(en_tutarlilar), f"Sapma: {min_sapma}")
+        col2.metric("🌪️ Marjinal",  ", ".join(en_aykinlar),   f"Sapma: {max_sapma}")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SAYFA: EN ZEVK SAHİBİ
