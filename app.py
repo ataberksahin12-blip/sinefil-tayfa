@@ -59,12 +59,13 @@ if not izlenen_filmler.empty:
         barmode="group", 
         orientation="h"  
     )
-    
+    dinamik_yukseklik = max(400, len(grafik_verisi) * 60)
     fig.update_layout(
         yaxis_title=None, 
         xaxis_title="Puan",
         legend_title="Puan Türü",
-        hovermode="y unified" 
+        hovermode="y unified",
+        height=dinamik_yukseklik
     )
     
     st.plotly_chart(fig, use_container_width=True)
