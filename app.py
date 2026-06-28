@@ -89,7 +89,6 @@ st.dataframe(df.style.highlight_max(axis=0, subset=["Grup Ortalaması"], color="
 
 st.markdown("---")
 
-# --- KİŞİ SIRALAMASI ---
 st.subheader("🎯 Kişi Sıralaması")
 
 rating_cols = ['ataberk_rtg', 'batu_rtg', 'ceylin_rtg', 'gokalp_rtg', 'kutay_rtg', 'onur_rtg']
@@ -97,6 +96,6 @@ isimler = ['Ataberk', 'Batu', 'Ceylin', 'Gökalp', 'Kutay', 'Onur']
 
 kisi_stats = []
 for col, isim in zip(rating_cols, isimler):
-    kisi_df = izlenen_filmler.dropna(subset=[col])
+    kisi_df = df.dropna(subset=[col])
     if not kisi_df.empty:
         sapma = (kisi_df[col] - kisi_df['Grup Ortalaması']).abs().mean()
