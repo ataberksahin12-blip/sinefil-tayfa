@@ -428,11 +428,10 @@ elif sayfa == "👤 Profil":
         )
 elif sayfa == "⚙️ Admin Otomasyon":
     st.title("⚙️ Tabloyu Otomatik Doldur")
-    st.info("Sadece TMDB ID'sini girdiğiniz filmlerin eksik olan (Film Adı, Yönetmen, Türler, IMDb/TMDB Puanı) bilgilerini otomatik çeker ve tabloya yazar.")
+    st.info("Sadece TMDB ID'sini girdiğiniz filmlerin eksik olan bilgilerini (İngilizce Film Adı, Yönetmen, Türkçe Türler) otomatik çeker ve tabloya yazar. (Not: TMDB, IMDb puanı vermediği için puanlar manuel girilmelidir).")
     
     if st.button("🚀 Film Bilgilerini Doldur"):
-        with st.spinner("TMDB ile konuşuluyor ve tablo güncelleniyor... Bu işlem film sayısına göre biraz sürebilir."):
-            # Google Sheets bağlantısı
+        with st.spinner("TMDB ile konuşuluyor ve tablo güncelleniyor..."):
             scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
             creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
             client = gspread.authorize(creds)
@@ -443,45 +442,42 @@ elif sayfa == "⚙️ Admin Otomasyon":
             guncellendi = 0
             
             for i, row in enumerate(kayitlar):
-                row_idx = i + 2 # Sheets satır indeksi (1. satır başlıklar)
+                row_idx = i + 2 
                 tmdb_id_val = row.get('tmdb_id')
                 
-                # TMDB ID girilmişse işlemlere başla
                 if pd.notna(tmdb_id_val) and str(tmdb_id_val).strip():
                     tmdb_id = int(float(tmdb_id_val))
                     
-                    # Eğer Film Adı, Yönetmen veya Türler'den biri bile boşsa API'ye git
                     if not row.get('film_adi') or not row.get('yonetmen') or not row.get('turler'):
-                        
                         st.write(f"🔍 ID: {tmdb_id} taranıyor...")
-                        # append_to_response=credits parametresiyle yönetmen (crew) bilgisini de tek seferde çekiyoruz
-                        url = f"https://api.themoviedb.org/3/movie/{tmdb_id}?api_key={st.secrets['TMDB_API_KEY']}&language=tr-TR&append_to_response=credits"
-                        r = requests.get(url)
                         
-                        if r.ok:
-                            data = r.json()
+                        # İngilizce İsim için en-US, Türkçe Türler ve Yönetmen için tr-TR isteği
+                        url_en = f"https://api.themoviedb.org/3/movie/{tmdb_id}?api_key={st.secrets['TMDB_API_KEY']}&language=en-US"
+                        url_tr = f"https://api.themoviedb.org/3/movie/{tmdb_id}?api_key={st.secrets['TMDB_API_KEY']}&language=tr-TR&append_to_response=credits"
+                        
+                        r_en = requests.get(url_en)
+                        r_tr = requests.get(url_tr)
+                        
+                        if r_en.ok and r_tr.ok:
+                            data_en = r_en.json()
+                            data_tr = r_tr.json()
                             
-                            # 1. FİLM ADI: Eğer boşsa doldur
+                            # 1. FİLM ADI: İngilizce veriden (data_en) çekiyoruz
                             if not row.get('film_adi') and 'film_adi' in headers:
-                                sheet.update_cell(row_idx, headers.index('film_adi') + 1, data.get('title', ''))
+                                sheet.update_cell(row_idx, headers.index('film_adi') + 1, data_en.get('title', ''))
                                 
-                            # 2. YÖNETMEN: Eğer boşsa doldur
+                            # 2. YÖNETMEN: Türkçe/Evrensel veriden çekiyoruz
                             if not row.get('yonetmen') and 'yonetmen' in headers:
-                                crew = data.get('credits', {}).get('crew', [])
-                                # Ekip listesinden görevi "Director" olan ilk kişiyi bul
+                                crew = data_tr.get('credits', {}).get('crew', [])
                                 yonetmen = next((c['name'] for c in crew if c['job'] == 'Director'), '')
                                 sheet.update_cell(row_idx, headers.index('yonetmen') + 1, yonetmen)
                                 
-                            # 3. TÜRLER: Eğer boşsa doldur
+                            # 3. TÜRLER: Türkçe veriden (data_tr) çekiyoruz ki Dram, Gerilim vs. Türkçe kalsın
                             if not row.get('turler') and 'turler' in headers:
-                                tur_metni = ", ".join([g['name'] for g in data.get('genres', [])])
+                                tur_metni = ", ".join([g['name'] for g in data_tr.get('genres', [])])
                                 sheet.update_cell(row_idx, headers.index('turler') + 1, tur_metni)
-                                
-                            # 4. PUAN (IMDb Sütununa): Eğer boşsa TMDB'nin 10 üzerinden olan puanını yaz
-                            if not row.get('imdb') and 'imdb' in headers:
-                                sheet.update_cell(row_idx, headers.index('imdb') + 1, round(data.get('vote_average', 0), 1))
                                 
                             guncellendi += 1
                             
-            st.success(f"İşlem tamam! {guncellendi} filmin eksik verileri tamamlandı. Değişiklikleri görmek için sayfayı yenileyin.")
+            st.success(f"İşlem tamam! {guncellendi} filmin eksik verileri İngilizce isimleriyle tamamlandı.")
             st.cache_data.clear()
