@@ -196,22 +196,39 @@ elif sayfa == "😎 En Zevk Sahibi":
 elif sayfa == "📊 Güvenlik vs Dünya":
     st.title("📊 Güvenlik vs. Dünya")
     if not izlenen_filmler.empty:
-        grafik_verisi = izlenen_filmler.rename(columns={"film_adi": "Film Adı", "letterboxd_avr": "Letterboxd Ortalaması"})
-        fig = px.bar(
+        grafik_verisi = izlenen_filmler.rename(columns={
+            "film_adi": "Film Adı", 
+            "letterboxd_avr": "Letterboxd Ortalaması"
+        })
+        
+        # Dağılım Grafiği (Scatter Plot) oluşturuyoruz
+        fig = px.scatter(
             grafik_verisi,
-            y="Film Adı",
-            x=["Grup Ortalaması", "Letterboxd Ortalaması", "IMDb (5 Üzerinden)"],
-            barmode="group",
-            orientation="h"
+            x="Letterboxd Ortalaması",
+            y="Grup Ortalaması",
+            hover_name="Film Adı",
+            color="Grup Ortalaması",
+            color_continuous_scale="RdYlGn", # Kırmızıdan yeşile renk skalası
+            size_max=15
         )
+        
+        # 45 derecelik referans çizgisi (y=x)
+        fig.add_shape(
+            type="line", line=dict(dash='dash', color="gray"),
+            x0=0, y0=0, x1=5, y1=5
+        )
+        
         fig.update_layout(
-            yaxis_title=None,
-            xaxis_title="Puan",
-            legend_title="Puan Türü",
-            hovermode="y unified",
-            height=max(400, len(grafik_verisi) * 60)
+            xaxis_title="Dünya (Letterboxd) Puanı",
+            yaxis_title="Vaziyet (Grup Ortalaması)",
+            height=600,
+            hovermode="closest",
+            xaxis=dict(range=[0.5, 5.2]),
+            yaxis=dict(range=[0.5, 5.2])
         )
         st.plotly_chart(fig, use_container_width=True)
+        
+        st.info("💡 **Grafik Nasıl Okunur?** Kesik çizginin **üstünde** kalan filmleri dünya ortalamasından daha çok sevmişsiniz. **Altında** kalanlarda ise dünya sizden daha iyimser.")
     else:
         st.info("Grafik oluşturmak için henüz film oylanmamış.")
 
