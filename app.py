@@ -90,7 +90,6 @@ st.dataframe(df.style.highlight_max(axis=0, subset=["Grup Ortalaması"], color="
 st.markdown("---")
 
 st.subheader("🎯 Kişi Sıralaması")
-
 rating_cols = ['ataberk_rtg', 'batu_rtg', 'ceylin_rtg', 'gokalp_rtg', 'kutay_rtg', 'onur_rtg']
 isimler = ['Ataberk', 'Batu', 'Ceylin', 'Gökalp', 'Kutay', 'Onur']
 
@@ -99,3 +98,43 @@ for col, isim in zip(rating_cols, isimler):
     kisi_df = df.dropna(subset=[col])
     if not kisi_df.empty:
         sapma = (kisi_df[col] - kisi_df['Grup Ortalaması']).abs().mean()
+        ortalama = kisi_df[col].mean()
+        kisi_stats.append({
+            "İsim": isim,
+            "Ortalama Puan": round(ortalama, 2),
+            "Grup'tan Sapma": round(sapma, 2),
+        })
+
+if kisi_stats:
+    kisi_df_gosterim = pd.DataFrame(kisi_stats).sort_values("Grup'tan Sapma")
+    st.dataframe(kisi_df_gosterim, hide_index=True)
+    en_tutarli = kisi_df_gosterim.iloc[0]["İsim"]
+    en_aykin = kisi_df_gosterim.iloc[-1]["İsim"]
+    col1, col2 = st.columns(2)
+    col1.metric("🎖️ En Tutarlı İzleyici", en_tutarli)
+    col2.metric("🌪️ En Aykırı İzleyici", en_aykin)
+
+st.markdown("---")
+
+# --- GÜVENLİK VS DÜNYA ---
+st.subheader("📊 Güvenlik vs. Dünya")
+if not izlenen_filmler.empty:
+    grafik_verisi = izlenen_filmler.rename(columns={"film_adi": "Film Adı"})
+    fig = px.bar(
+        grafik_verisi,
+        y="Film Adı",
+        x=["Grup Ortalaması", "letterboxd_avr", "IMDb (5 Üzerinden)"],
+        barmode="group",
+        orientation="h"
+    )
+    dinamik_yukseklik = max(400, len(grafik_verisi) * 60)
+    fig.update_layout(
+        yaxis_title=None,
+        xaxis_title="Puan",
+        legend_title="Puan Türü",
+        hovermode="y unified",
+        height=dinamik_yukseklik
+    )
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.info("Grafik oluşturmak için henüz film oylanmamış.")
