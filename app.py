@@ -49,10 +49,14 @@ st.markdown("---")
 
 st.subheader("📊 Güvenlik vs. Dünya")
 if not izlenen_filmler.empty:
-        st.bar_chart(
-        izlenen_filmler,
-        x="film_adi", 
-        y=["Grup Ortalaması", "letterboxd_avr", "IMDb (5 Üzerinden)"] 
-        )
+    grafik_verisi = izlenen_filmler.rename(columns={"film_adi": "Film Adı"})
+    
+    st.bar_chart(
+        grafik_verisi,
+        x="Film Adı", 
+        y=["Grup Ortalaması", "letterboxd_avr", "IMDb (5 Üzerinden)"],
+        stack=False,      
+        horizontal=True   
+    )
 else:
     st.info("Grafik oluşturmak için henüz film oylanmamış.")
