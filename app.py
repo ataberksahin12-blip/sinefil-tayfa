@@ -41,19 +41,42 @@ izlenen_filmler = df.dropna(subset=['Grup Ortalaması'])
 TMDB_API_KEY = st.secrets["TMDB_API_KEY"]
 
 @st.cache_data(show_spinner=False)
-def get_poster(film_adi):
-    url    = "https://api.themoviedb.org/3/search/movie"
-    params = {"api_key": TMDB_API_KEY, "query": film_adi, "language": "tr-TR"}
+def get_poster(film_adi, yonetmen=None, tmdb_id=None):
+    base = "https://api.themoviedb.org/3"
+    img  = "https://image.tmdb.org/t/p/w300"
+
+    def parse(film):
+        poster_path = film.get("poster_path")
+        return {
+            "poster_url":  img + poster_path if poster_path else None,
+            "tmdb_rating": round(film.get("vote_average", 0) / 2, 2),
+            "overview":    film.get("overview", ""),
+        }
+
     try:
-        data = requests.get(url, params=params, timeout=5).json()
-        if data["results"]:
-            film        = data["results"][0]
-            poster_path = film.get("poster_path")
-            return {
-                "poster_url":   f"https://image.tmdb.org/t/p/w300{poster_path}" if poster_path else None,
-                "tmdb_rating":  round(film.get("vote_average", 0) / 2, 2),
-                "overview":     film.get("overview", ""),
-            }
+        # 1) tmdb_id varsa direkt çek — en güvenilir yol
+        if tmdb_id and str(tmdb_id).strip():
+            r = requests.get(f"{base}/movie/{tmdb_id}",
+                             params={"api_key": TMDB_API_KEY}, timeout=5)
+            if r.ok:
+                return parse(r.json())
+
+        # 2) Film adı + yönetmen ile ara
+        query = f"{film_adi} {yonetmen}".strip() if yonetmen else film_adi
+        r = requests.get(f"{base}/search/movie",
+                         params={"api_key": TMDB_API_KEY, "query": query, "language": "tr-TR"},
+                         timeout=5)
+        if r.ok and r.json()["results"]:
+            return parse(r.json()["results"][0])
+
+        # 3) Yönetmenli sorgu sonuç vermezse sadece film adıyla tekrar dene
+        if yonetmen:
+            r = requests.get(f"{base}/search/movie",
+                             params={"api_key": TMDB_API_KEY, "query": film_adi, "language": "tr-TR"},
+                             timeout=5)
+            if r.ok and r.json()["results"]:
+                return parse(r.json()["results"][0])
+
     except Exception:
         pass
     return None
@@ -105,7 +128,7 @@ elif sayfa == "🎬 Film Kartları":
         for j, col in enumerate(cols):
             if i + j < len(filmler):
                 film = filmler.iloc[i + j]
-                tmdb = get_poster(film["film_adi"])
+                tmdb = get_poster(film["film_adi"], yonetmen=film.get("yonetmen"), tmdb_id=film.get("tmdb_id"))
                 with col:
                     if tmdb and tmdb["poster_url"]:
                         st.image(tmdb["poster_url"], width=180)
@@ -229,7 +252,7 @@ elif sayfa == "👤 Profil":
     en_iyi = kisi_df.head(5)
     cols   = st.columns(len(en_iyi))
     for col, (_, row) in zip(cols, en_iyi.iterrows()):
-        tmdb = get_poster(row['film_adi'])
+        tmdb = get_poster(row['film_adi'], yonetmen=row.get('yonetmen'), tmdb_id=row.get('tmdb_id'))
         with col:
             if tmdb and tmdb["poster_url"]:
                 st.image(tmdb["poster_url"], width=130)
@@ -253,7 +276,7 @@ elif sayfa == "👤 Profil":
     en_kotu = kisi_df.tail(5).sort_values(rtg_kol)
     cols    = st.columns(len(en_kotu))
     for col, (_, row) in zip(cols, en_kotu.iterrows()):
-        tmdb = get_poster(row['film_adi'])
+        tmdb = get_poster(row['film_adi'], yonetmen=row.get('yonetmen'), tmdb_id=row.get('tmdb_id'))
         with col:
             if tmdb and tmdb["poster_url"]:
                 st.image(tmdb["poster_url"], width=130)
@@ -330,7 +353,7 @@ elif sayfa == "👤 Profil":
 
         cols = st.columns(min(len(onerdigi_df), 5))
         for col, (_, row) in zip(cols, onerdigi_df.head(5).iterrows()):
-            tmdb = get_poster(row['film_adi'])
+            tmdb = get_poster(row['film_adi'], yonetmen=row.get('yonetmen'), tmdb_id=row.get('tmdb_id'))
             with col:
                 if tmdb and tmdb["poster_url"]:
                     st.image(tmdb["poster_url"], width=130)
