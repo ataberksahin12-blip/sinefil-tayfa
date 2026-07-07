@@ -175,25 +175,6 @@ if sayfa == "🏠 Genel":
         else:
             st.info("Grup tür analizi için yeterli veri yok (En az 3 farklı tür gerekli).")
 
-    # 2. GRUP BİÇİM / TEMA RADARI
-    with g_col2:
-        st.markdown("**🧠 Favori Biçim/Tema**")
-        g_bicim_stats = get_tag_data(izlenen_filmler, 'Grup Ortalaması', 'bicim')
-        
-        if not g_bicim_stats.empty and len(g_bicim_stats) >= 3:
-            fig_g_bicim = px.line_polar(
-                g_bicim_stats, r='Ortalama_Puan', theta='bicim', 
-                line_close=True, markers=True, hover_name='bicim', hover_data={'Film_Sayisi': True}
-            )
-            # Grup için farklı bir renk (Sarı/Turuncu)
-            fig_g_bicim.update_traces(fill='toself', line_color='#f39c12') 
-            fig_g_bicim.update_layout(
-                polar=dict(radialaxis=dict(visible=True, range=[0, 5])), 
-                showlegend=False, height=350, margin=dict(t=20, b=20, l=40, r=40)
-            )
-            st.plotly_chart(fig_g_bicim, use_container_width=True)
-        else:
-            st.info("Grup biçim analizi için yeterli veri yok (En az 3 farklı biçim gerekli).")
 # ══════════════════════════════════════════════════════════════════════════════
 # SAYFA: FİLM KARTLARI
 # ══════════════════════════════════════════════════════════════════════════════
